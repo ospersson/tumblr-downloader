@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDownConsole", "Tumblr Downloader\TDownConsole.csproj", "{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099} = {8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDown", "TDown\TDown.csproj", "{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B1C7C1A-03D2-4E83-BCBB-E9EDD71BC099}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
