@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TDown
 {
@@ -31,17 +32,21 @@ namespace TDown
             if (url == string.Empty)
                 throw new ApplicationException("url is empty");
 
-            string jsonString = string.Empty;
+            string jsonString;
 
             using (var wc = new WebClient())
             {
+                wc.Proxy = null;
+
                 try
                 {
-                    jsonString = wc.DownloadString(url);
+                    var uri = new Uri(url);
+                    jsonString = wc.DownloadString(uri);
                     if(doLogJson)
                     {
                         folderPath = LogJsonToDisk(folderPath, domain, jsonString);
                     }
+
                 }
                 catch (WebException we)
                 {

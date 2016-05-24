@@ -1,0 +1,56 @@
+﻿<Window x:Class="TDownGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TDownGUI"
+        mc:Ignorable="d"
+        Title="Askella Tumblr Image Downloader" Height="350" Width="600">
+    <Grid>
+        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Height="310" Width="590">
+            <Grid Margin="5,5,5,5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35" />
+                    <RowDefinition Height="35" />
+                    <RowDefinition Height="35" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="250" />
+                    <ColumnDefinition Width="150" />
+                </Grid.ColumnDefinitions>
+
+                <Label Grid.Column="0" Grid.Row="0"  Content="Tumblr Site:" Width="96" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Grid.Row="0" x:Name="txtSite" Margin="2,2,2,2" VerticalContentAlignment="Center" FontSize="14" />
+                <Button Grid.Column="2" Grid.Row="0" x:Name="btnDownload" Content="Download" Margin="10,5,10,5" Click="btnDownload_Click" Background="#FF12E608"  />
+                <Label Grid.Column="0" Grid.Row="1"  Content="Download folder:" Width="100" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Grid.Row="1" x:Name="txtDownloadFolder" Margin="2,2,2,2" VerticalContentAlignment="Center" FontSize="14" />
+                <Button Grid.Column="2" Grid.Row="1" x:Name="btnBrowseFolder" Content="Choose folder" Margin="10,5,10,5" Click="btnBrowseFolder_Click"  />
+                <CheckBox Grid.Column="0" Grid.Row="2" x:Name="chkSubfolder" VerticalAlignment="Center" Margin="90,0,5,0" HorizontalContentAlignment="Right"/>
+                <Label Grid.Column="1" Grid.Row="3" Content ="Make subfolder with page name" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Grid.Row="2" x:Name="btnBrowseDownloadFolder" Content="Open picture folder" Margin="10,5,10,5" Click="btnBrowseDownloadFolder_Click"  />
+            </Grid>
+
+            <Grid Margin="8,10,15,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="220" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer Grid.Column="0" Grid.Row="0" BorderThickness="1" VerticalScrollBarVisibility="Auto" Width="auto" HorizontalScrollBarVisibility="Hidden" Margin="5,10, 5,5">
+                    <TextBlock Name="LogTextBlock" Foreground="Silver" Width="auto"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="13" >
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}">
+                                <Binding Path="LogText" Mode="TwoWay"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </ScrollViewer>
+
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

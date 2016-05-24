@@ -12,6 +12,7 @@ namespace TDown
         IList<Post> GetPostList(JObject tumblrJObject);
         string CreateDownloadUrl(string baseUrl, int startPost, int numberOfPosts);
         JObject GetTumblrObject(string baseDomainUrl, string jsonString, string folderPath);
+        string GetBaseDomainFromUrl(string url);
     }
     
     public class TumblrHandler : ITumblrHandler
@@ -74,6 +75,16 @@ namespace TDown
             }
 
             return tumblrJObject;
+        }
+
+        public string GetBaseDomainFromUrl(string url)
+        {
+            url = url.Replace("http://", string.Empty);
+            url = url.Replace("https://", string.Empty);
+            url = url.Replace("http", string.Empty);
+            url = url.Replace("https", string.Empty);
+            
+            return url;
         }
     }
 }

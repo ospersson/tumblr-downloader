@@ -16,6 +16,7 @@ namespace TDownConsole
             int nbrOfPostPerCall = 50;
             bool doWriteJson = false;
 
+        
             //Read from console
             string[] args2 = Environment.GetCommandLineArgs();
 
@@ -32,6 +33,10 @@ namespace TDownConsole
                 if (args2[3] == "-l")
                     doWriteJson = true;
             }
+
+#if DEBUG
+            baseDomainUrl = "bestcatpictures.tumblr.com";
+#endif
 
             if (baseDomainUrl == string.Empty)
             {
@@ -61,7 +66,9 @@ namespace TDownConsole
             var folderPath = baseDiskPath + "\\" + baseDomainUrl;
             Directory.CreateDirectory(folderPath);
 
-            DownloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
+            var downloadHandler = new DownloadHandler();
+            downloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
+            downloadHandler.DownloadStatusMessage += StatusMessage;
 
             //Download json from url
             IJsonHandler jsonhandler = new JsonHandler();
@@ -72,7 +79,7 @@ namespace TDownConsole
             try
             {
                 Console.WriteLine("Parsing JSON");
-                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
+                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
             }
             catch (Exception ex)
             {
@@ -88,7 +95,7 @@ namespace TDownConsole
             Console.WriteLine("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
 
             IList<Post> posts = tumblrHandler.GetPostList(tumblrJObject);
-            DownloadHandler.DownloadAllImages(posts, folderPath);
+            downloadHandler.DownloadAllImages(posts, folderPath);
             Console.WriteLine("\nFirst batch done.");
 
             nbrOfPostsFetchedFromUrl += 50;
@@ -103,13 +110,13 @@ namespace TDownConsole
                 jsonString = jsonhandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
                 Console.WriteLine("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
-                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
+                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
 
                 //Get a list of tumblr images post(s)
                 posts = tumblrHandler.GetPostList(tumblrJObject);
 
                 //Download images from the tumblr image post(s)
-                DownloadHandler.DownloadAllImages(posts, folderPath);
+                downloadHandler.DownloadAllImages(posts, folderPath);
             }
 
             Console.WriteLine("\nDownload done!");
@@ -122,6 +129,11 @@ namespace TDownConsole
             Console.WriteLine("\nCancel key pressed, console app is closing.");
             //Call exit
             Environment.Exit(-1);
-        }  
+        }
+
+        private static void StatusMessage(object sender, StatusMessageEventArgs e)
+        {
+            Console.WriteLine(e.Message);
+        }
     }
 }

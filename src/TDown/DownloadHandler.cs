@@ -6,14 +6,14 @@ using System.Threading;
 
 namespace TDown
 {
-    public static class DownloadHandler
+    public class DownloadHandler
     {
         /// <summary>
         /// Download avatar from Tumblr blog. Using open method from Tumblr API V2.
         /// </summary>
         /// <param name="siteName">Name of Tumblr blog</param>
         /// <param name="folderPath">Save avatar to this path</param>
-        public static void DownloadAvatar(string siteName, string folderPath)
+        public void DownloadAvatar(string siteName, string folderPath)
         {
             string avatarUrl = @"https://api.tumblr.com/v2/blog/" + siteName + "/avatar/512";
 
@@ -24,7 +24,7 @@ namespace TDown
             DownloadRemoteImageFile(avatarUrl, avatarDiskPath);
         }
 
-        public static void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 5000)
+        public void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 5000)
         {
             var imageNbr = 1;
             var rnd = new Random();
@@ -38,19 +38,18 @@ namespace TDown
                     var consoleInfoExist = "Image " + imageNbr + " of 50: " + post.ImageName() + " exists on disk   ";
                     //Random sleep, possible to read the text!
                     Thread.Sleep(rnd.Next(maxWait / 5));
-                    Console.Write("\r{0}", consoleInfoExist);
+                    StatusMsg(string.Format("{0}", consoleInfoExist));
                     imageNbr++;
                     continue;
                 }
 
                 //Save each image to disk.
-                DownloadHandler.DownloadRemoteImageFile(post.PhotoUrl1280, imagePath);
+                DownloadRemoteImageFile(post.PhotoUrl1280, imagePath);
 
                 var consoleInfo = "Dowloading image " + imageNbr + " of 50: " + post.ImageName();
                 //Random sleep, be nice to the host!
                 Thread.Sleep(rnd.Next(maxWait));
-                Console.Write("\r{0}", new String(' ', 80));
-                Console.Write("\r{0}", consoleInfo);
+                StatusMsg(string.Format("{0}", consoleInfo));
 
                 imageNbr++;
             }
@@ -65,7 +64,7 @@ namespace TDown
         /// <param name="uri"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static bool DownloadRemoteImageFile(string uri, string fileName)
+        public bool DownloadRemoteImageFile(string uri, string fileName)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             HttpWebResponse response;
@@ -82,7 +81,7 @@ namespace TDown
             }
             catch (Exception)
             {
-                return false;
+                throw;
             }
 
             // Check that the remote file was found. The ContentType
@@ -113,5 +112,31 @@ namespace TDown
             else
                 return false;
         }
+
+        public void StatusMsg(string msg)
+        {
+            StatusMessageEventArgs args = new StatusMessageEventArgs();
+            args.Message = msg;
+            OnStatusMessage(args);
+        }
+
+        protected virtual void OnStatusMessage(StatusMessageEventArgs e)
+        {
+            StatusMessageEventHandler handler = DownloadStatusMessage;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        public event StatusMessageEventHandler DownloadStatusMessage;
+
     }
+
+    public class StatusMessageEventArgs : EventArgs
+    {
+        public string Message { get; set; }
+    }
+
+    public delegate void StatusMessageEventHandler(object sender, StatusMessageEventArgs e);
 }
