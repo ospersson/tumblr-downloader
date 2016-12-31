@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -17,7 +18,7 @@ namespace TDownGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Logger logg;
+        private ILogger logg;
         bool isDownloadStarted = false;
         bool IsCancellationRequested = false;
 
@@ -32,7 +33,7 @@ namespace TDownGUI
         {
             string baseDiskPath = string.Empty;
             string baseDomainUrl = string.Empty;
-            baseDomainUrl = txtSite.Text;
+            baseDomainUrl = GetBaseDomainUrl(txtSite.Text);
             baseDiskPath = txtDownloadFolder.Text;
 
             if(isDownloadStarted)
@@ -55,19 +56,19 @@ namespace TDownGUI
 
             await Task.Factory.StartNew(() =>
             {
-                TumblrWorker(baseDomainUrl, baseDiskPath, doCreateSubFolder);
+                TumblrWorker(logg, baseDomainUrl, baseDiskPath, doCreateSubFolder);
             });
         }
 
-        private void TumblrWorker(string baseDomainUrl, string baseDiskPath, bool doCreateSubFolder)
-        { 
+        public void TumblrWorker(ILogger logger, string baseDomainUrl, string baseDiskPath, bool doCreateSubFolder)
+        {
             int nbrOfPostPerCall = 50;
             bool doWriteJson = false;
             string folderPath = string.Empty;
 
             if (baseDomainUrl == string.Empty)
             {
-                logg.LogText = "Please enter the blog where images(eg bestcatpictures.tumblr.com) will be downloaded from!";
+                logger.LogText = "Please enter the blog where images(eg bestcatpictures.tumblr.com) will be downloaded from!";
                 return;
             }
             else if (baseDiskPath == string.Empty)
@@ -75,13 +76,14 @@ namespace TDownGUI
                 baseDiskPath = Infrastructure.AssemblyDirectory;
             }
 
-            logg.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
+            logger.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
 
-            ITumblrHandler tumblrHandler = new TumblrHandler();
+            IJsonHandler jsonHandler = new JsonHandler();
+            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
             baseDomainUrl = tumblrHandler.GetBaseDomainFromUrl(baseDomainUrl);
             var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
 
-            if(doCreateSubFolder)
+            if (doCreateSubFolder)
             {
                 folderPath = baseDiskPath + "\\" + baseDomainUrl;
             }
@@ -93,47 +95,57 @@ namespace TDownGUI
             //Create download folder(if not exist).   
             Directory.CreateDirectory(folderPath);
 
-            var downloadHandler = new DownloadHandler();
+            IDownloadHandler downloadHandler = new DownloadHandler();
             downloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
             downloadHandler.DownloadStatusMessage += StatusMessage;
 
             //Download json from url
-            IJsonHandler jsonhandler = new JsonHandler();
-            var jsonString = jsonhandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
+            string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
 
             JObject tumblrJObject;
 
             try
             {
-                logg.LogText = "Parsing JSON";
+                logger.LogText = "Parsing JSON";
                 tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
             }
             catch (Exception ex)
             {
-                logg.LogText = "--- Writing stack trace: ---";
-                logg.LogText = ex.ToString();
+                logger.LogText = "--- Writing stack trace: ---";
+                logger.LogText = ex.ToString();
                 return;
             }
 
             TumblerSiteInfo siteInfo = tumblrHandler.GetSiteInfo(tumblrJObject);
 
-            logg.LogText = string.Format("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
+            logger.LogText = string.Format("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
 
             IList<Post> posts = tumblrHandler.GetPostList(tumblrJObject);
             downloadHandler.DownloadAllImages(posts, folderPath);
-            logg.LogText = "First batch done.";
+            logger.LogText = "First batch done.";
 
-            MainDownloadLoop(siteInfo.PostsTotal, baseDomainUrl, baseDiskPath, folderPath, nbrOfPostPerCall, doWriteJson);
+            MainDownloadLoop(logger, siteInfo.PostsTotal, baseDomainUrl, baseDiskPath, folderPath, nbrOfPostPerCall, doWriteJson);
 
-            logg.LogText = "Download done!";
+            logger.LogText = "Download done!";
         }
 
-        private void MainDownloadLoop(int postsTotal, string baseDomainUrl, string baseDiskPath, string folderPath, int nbrOfPostPerCall, bool doWriteJson = false)
+        private string DownloadJson(string baseDomainUrl, string baseDiskPath, bool doWriteJson, string url, IJsonHandler jsonhandler)
+        {
+            string jsonString = string.Empty;
+            using (var webClient = new WebClient())
+            {
+                jsonString = jsonhandler.DownloadJson(webClient, url, doWriteJson, baseDiskPath, baseDomainUrl);
+            }
+
+            return jsonString;
+        }
+
+        private void MainDownloadLoop(ILogger logger, int postsTotal, string baseDomainUrl, string baseDiskPath, string folderPath, int nbrOfPostPerCall, bool doWriteJson = false)
         {
             int nbrOfPostsFetchedFromUrl = 0;
             string url = string.Empty;
             IJsonHandler jsonhandler = new JsonHandler();
-            ITumblrHandler tumblrHandler = new TumblrHandler();
+            ITumblrHandler tumblrHandler = new TumblrHandler(jsonhandler);
             JObject tumblrJObject;
 
             var downloadHandler = new DownloadHandler();
@@ -151,9 +163,9 @@ namespace TDownGUI
                 url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, currentPost, nbrOfPostPerCall);
 
                 //Download json from url
-                var jsonString = jsonhandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
+                string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonhandler);
 
-                logg.LogText = string.Format("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
+                logger.LogText = string.Format("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
                 tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
 
                 //Get a list of tumblr images post(s)
@@ -188,10 +200,30 @@ namespace TDownGUI
         {
             System.Diagnostics.Process.Start("explorer.exe", @"c:\test");
         }
+
+        /// <summary>
+        /// Clean out the last / from the domain name.
+        /// </summary>
+        /// <returns></returns>
+        private string GetBaseDomainUrl(string baseDomainString)
+        {
+            int idx = baseDomainString.LastIndexOf('/');
+
+            if (idx < 13)
+                return baseDomainString;
+
+            return baseDomainString.Substring(0, idx);
+        }
     }
 
 
-    public class Logger : INotifyPropertyChanged
+    public interface ILogger
+    {
+        string LogText { get; set; }
+        event PropertyChangedEventHandler PropertyChanged;
+    }
+
+    public class Logger : ILogger, INotifyPropertyChanged
     {
         private static StringBuilder _logText = new StringBuilder();
 

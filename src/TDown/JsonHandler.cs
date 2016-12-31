@@ -2,14 +2,13 @@
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TDown
 {
     public interface IJsonHandler
     {
         void WriteJsonToDebugFile(string baseUrl, string jsonString, string folderPath);
-        string DownloadJson(string url, bool doLogJson = false, string folderPath = "", string domain = "");
+        string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "");
     }
 
     public class JsonHandler : IJsonHandler
@@ -27,42 +26,43 @@ namespace TDown
             File.WriteAllText(pathAndName, jsonString);
         }
 
-        public string DownloadJson(string url, bool doLogJson = false, string folderPath = "", string domain = "")
+        public string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "")
         {
             if (url == string.Empty)
-                throw new ApplicationException("url is empty");
+                throw new ApplicationException("url is empty!");
+                
+            if (webClient == null)
+                throw new ApplicationException("webClient is null!");
 
             string jsonString;
 
-            using (var wc = new WebClient())
+            webClient.Proxy = null;
+
+            try
             {
-                wc.Proxy = null;
-
-                try
+                var uri = new Uri(url);
+                jsonString = webClient.DownloadString(uri);
+                if(doLogJson)
                 {
-                    var uri = new Uri(url);
-                    jsonString = wc.DownloadString(uri);
-                    if(doLogJson)
-                    {
-                        folderPath = LogJsonToDisk(folderPath, domain, jsonString);
-                    }
-
-                }
-                catch (WebException we)
-                {
-                    Console.WriteLine(we.Message);
-                    Console.WriteLine("Press return to exit");
-                    Console.ReadLine();
-                    return string.Empty;
-                }
-                catch(Exception)
-                {
-                    throw;
+                    folderPath = LogJsonToDisk(folderPath, domain, jsonString);
                 }
 
-                //Return a clean json string.
-                return CleanJson(jsonString);
             }
+            catch (WebException we)
+            {
+                Console.WriteLine(we.Message);
+                Console.WriteLine("Press return to exit");
+                Console.ReadLine();
+                return string.Empty;
+            }
+            catch(Exception)
+            {
+                throw;
+            }
+
+            //Return a clean json string.
+            return CleanJson(jsonString);
+            
         }
 
         private static string LogJsonToDisk(string folderPath, string domain, string jsonString)
@@ -142,6 +142,7 @@ namespace TDown
                 .Replace("\\'", string.Empty)
                 .Replace("Je t'", "Je t")
                 .Replace("n't", "nt");
+                
 
             return jsonString.ToString();
         }

@@ -17,6 +17,13 @@ namespace TDown
     
     public class TumblrHandler : ITumblrHandler
     {
+        private IJsonHandler _jsonHandler;
+
+        public TumblrHandler(IJsonHandler jsonHandler)
+        {
+            _jsonHandler = jsonHandler;
+        }
+
         public TumblerSiteInfo GetSiteInfo(JObject tumblrJObject)
         {
             //Get JSON results post-total
@@ -67,10 +74,9 @@ namespace TDown
             {
                 tumblrJObject = JObject.Parse(jsonString);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                IJsonHandler jsonhandler = new JsonHandler();
-                jsonhandler.WriteJsonToDebugFile(baseDomainUrl, jsonString, folderPath);
+                _jsonHandler.WriteJsonToDebugFile(baseDomainUrl, jsonString, folderPath);
                 throw;
             }
 

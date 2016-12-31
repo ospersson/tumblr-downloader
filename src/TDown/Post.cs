@@ -38,13 +38,17 @@ namespace TDown
         public string PhotoUrl500 { get; set; }
         [JsonProperty("photo-url-100")]
         public string PhotoUrl100 { get; set; }
+
+        [JsonProperty("photos")]
+        public List<Photo> Photos { get; set; }
+
         [JsonProperty("tags")]
         public List<string> Tags { get; set; }
 
-        public string ImageName()
+        public string ImageName(string photoUrl)
         {
-            int idx = PhotoUrl1280.LastIndexOf('/');
-            return PhotoUrl1280.Substring(idx + 1); 
+            int idx = photoUrl.LastIndexOf('/');
+            return photoUrl.Substring(idx + 1); 
         }
     }
 }
