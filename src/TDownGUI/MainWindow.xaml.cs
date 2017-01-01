@@ -33,7 +33,7 @@ namespace TDownGUI
         {
             string baseDiskPath = string.Empty;
             string baseDomainUrl = string.Empty;
-            baseDomainUrl = GetBaseDomainUrl(txtSite.Text);
+            baseDomainUrl = DomainHandler.GetBaseDomainFromUrl(txtSite.Text);
             baseDiskPath = txtDownloadFolder.Text;
 
             if(isDownloadStarted)
@@ -78,9 +78,10 @@ namespace TDownGUI
 
             logger.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
 
-            IJsonHandler jsonHandler = new JsonHandler();
+            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
+            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
             ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
-            baseDomainUrl = tumblrHandler.GetBaseDomainFromUrl(baseDomainUrl);
+            baseDomainUrl = DomainHandler.GetBaseDomainFromUrl(baseDomainUrl);
             var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
 
             if (doCreateSubFolder)
@@ -144,7 +145,9 @@ namespace TDownGUI
         {
             int nbrOfPostsFetchedFromUrl = 0;
             string url = string.Empty;
-            IJsonHandler jsonhandler = new JsonHandler();
+
+            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
+            IJsonHandler jsonhandler = new JsonHandler(jsonLogger);
             ITumblrHandler tumblrHandler = new TumblrHandler(jsonhandler);
             JObject tumblrJObject;
 
@@ -199,20 +202,6 @@ namespace TDownGUI
         private void btnBrowseDownloadFolder_Click(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Process.Start("explorer.exe", @"c:\test");
-        }
-
-        /// <summary>
-        /// Clean out the last / from the domain name.
-        /// </summary>
-        /// <returns></returns>
-        private string GetBaseDomainUrl(string baseDomainString)
-        {
-            int idx = baseDomainString.LastIndexOf('/');
-
-            if (idx < 13)
-                return baseDomainString;
-
-            return baseDomainString.Substring(0, idx);
         }
     }
 

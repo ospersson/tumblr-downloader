@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Newtonsoft.Json.Linq;
 using TDown;
 
 namespace TDownConsole
@@ -36,6 +35,7 @@ namespace TDownConsole
 
 #if DEBUG
             baseDomainUrl = "bestcatpictures.tumblr.com";
+            doWriteJson = true;
 #endif
 
             if (baseDomainUrl == string.Empty)
@@ -59,28 +59,35 @@ namespace TDownConsole
 
             Console.WriteLine("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
 
-            IJsonHandler jsonHandler = new JsonHandler();
-            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
-            var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
-
+            baseDomainUrl = DomainHandler.GetBaseDomainFromUrl(baseDomainUrl);
+            
             //Create download folder(if not exist).
             var folderPath = baseDiskPath + "\\" + baseDomainUrl;
             Directory.CreateDirectory(folderPath);
+
+            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
+            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
+            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
+
+            var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
 
             IDownloadHandler downloadHandler = new DownloadHandler();
             downloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
             downloadHandler.DownloadStatusMessage += StatusMessage;
 
             //Download json from url
-            IJsonHandler jsonhandler = new JsonHandler();
-            string jsonString = DownloadJson(baseDiskPath, baseDomainUrl, doWriteJson, url, jsonhandler);
+            string jsonString = DownloadJson(baseDiskPath, baseDomainUrl, doWriteJson, url, jsonHandler);
 
-            JObject tumblrJObject;
+            //JObject tumblrJObject;
+            TumblerSiteInfo siteInfo;
+            IList<Post> posts = new List<Post>();
 
             try
             {
                 Console.WriteLine("Parsing JSON");
-                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
+                var tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
+                siteInfo = tumblrHandler.GetSiteInfo(tumblrJObject);
+                posts = tumblrHandler.GetPostList(tumblrJObject);
             }
             catch (Exception ex)
             {
@@ -91,16 +98,20 @@ namespace TDownConsole
                 return;
             }
 
-            TumblerSiteInfo siteInfo = tumblrHandler.GetSiteInfo(tumblrJObject);
-
             Console.WriteLine("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
-
-            IList<Post> posts = tumblrHandler.GetPostList(tumblrJObject);
             downloadHandler.DownloadAllImages(posts, folderPath);
             Console.WriteLine("\nFirst batch done.");
 
             nbrOfPostsFetchedFromUrl += 50;
+            MainDownloadLoop(baseDiskPath, baseDomainUrl, nbrOfPostPerCall, doWriteJson, folderPath, jsonHandler, tumblrHandler, ref url, downloadHandler, ref jsonString, siteInfo, ref posts);
 
+            Console.WriteLine("\nDownload done!");
+            Console.WriteLine("\nPress return to exit.");
+            Console.ReadLine();
+        }
+
+        private static void MainDownloadLoop(string baseDiskPath, string baseDomainUrl, int nbrOfPostPerCall, bool doWriteJson, string folderPath, IJsonHandler jsonHandler, ITumblrHandler tumblrHandler, ref string url, IDownloadHandler downloadHandler, ref string jsonString, TumblerSiteInfo siteInfo, ref IList<Post> posts)
+        {
             //Main download loop.
             for (int currentPost = 50; currentPost < siteInfo.PostsTotal; currentPost += 50)
             {
@@ -108,10 +119,10 @@ namespace TDownConsole
                 url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, currentPost, nbrOfPostPerCall);
 
                 //Download json from url
-                jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonhandler);
+                jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
 
                 Console.WriteLine("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
-                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
+                var tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
 
                 //Get a list of tumblr images post(s)
                 posts = tumblrHandler.GetPostList(tumblrJObject);
@@ -119,10 +130,6 @@ namespace TDownConsole
                 //Download images from the tumblr image post(s)
                 downloadHandler.DownloadAllImages(posts, folderPath);
             }
-
-            Console.WriteLine("\nDownload done!");
-            Console.WriteLine("\nPress return to exit.");
-            Console.ReadLine();
         }
 
         private static string DownloadJson(string baseDiskPath, string baseDomainUrl, bool doWriteJson, string url, IJsonHandler jsonhandler)

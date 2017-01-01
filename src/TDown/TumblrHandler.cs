@@ -12,7 +12,6 @@ namespace TDown
         IList<Post> GetPostList(JObject tumblrJObject);
         string CreateDownloadUrl(string baseUrl, int startPost, int numberOfPosts);
         JObject GetTumblrObject(string baseDomainUrl, string jsonString, string folderPath);
-        string GetBaseDomainFromUrl(string url);
     }
     
     public class TumblrHandler : ITumblrHandler
@@ -64,6 +63,13 @@ namespace TDown
             return url;
         }
 
+        /// <summary>
+        /// Parse JSON string to JObject
+        /// </summary>
+        /// <param name="baseDomainUrl"></param>
+        /// <param name="jsonString"></param>
+        /// <param name="folderPath"></param>
+        /// <returns>Returns a serialized JObject</returns>
         public JObject GetTumblrObject(string baseDomainUrl, string jsonString, string folderPath)
         {
             if (jsonString == string.Empty)
@@ -76,21 +82,12 @@ namespace TDown
             }
             catch (Exception ex)
             {
+                var nisse = jsonString.Substring(25);
                 _jsonHandler.WriteJsonToDebugFile(baseDomainUrl, jsonString, folderPath);
-                throw;
+                throw ex;
             }
 
             return tumblrJObject;
-        }
-
-        public string GetBaseDomainFromUrl(string url)
-        {
-            url = url.Replace("http://", string.Empty);
-            url = url.Replace("https://", string.Empty);
-            url = url.Replace("http", string.Empty);
-            url = url.Replace("https", string.Empty);
-            
-            return url;
         }
     }
 }

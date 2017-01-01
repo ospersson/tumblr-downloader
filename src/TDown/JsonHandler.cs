@@ -13,6 +13,13 @@ namespace TDown
 
     public class JsonHandler : IJsonHandler
     {
+        private IJsonLogger _jsonLogger;
+
+        public JsonHandler(IJsonLogger jsonLogger)
+        {
+            _jsonLogger = jsonLogger;
+        }
+
         /// <summary>
         /// Write the JSON file to disk for debug/ocular inspection.
         /// </summary>
@@ -44,7 +51,7 @@ namespace TDown
                 jsonString = webClient.DownloadString(uri);
                 if(doLogJson)
                 {
-                    folderPath = LogJsonToDisk(folderPath, domain, jsonString);
+                    _jsonLogger.LogJson(jsonString);
                 }
 
             }
@@ -62,55 +69,20 @@ namespace TDown
 
             //Return a clean json string.
             return CleanJson(jsonString);
-            
-        }
-
-        private static string LogJsonToDisk(string folderPath, string domain, string jsonString)
-        {
-            if (folderPath == string.Empty)
-                throw new ApplicationException("LogJsonToDisk, folder path is empty!");
-            else if (domain == string.Empty)
-            {
-                throw new ApplicationException("LogJsonToDisk, domain is empty!");
-            }
-            else if (jsonString == string.Empty)
-            {
-                throw new ApplicationException("LogJsonToDisk, jsonString is empty!");
-            }
-
-            //Log raw json to disk
-            var jsonArray = new[] { jsonString };
-
-            if (folderPath.Contains(domain))
-            {
-                folderPath += "\\JSON";
-            }
-            else
-            {
-                folderPath = folderPath + "\\" + domain + "\\JSON";
-            }
-
-            Directory.CreateDirectory(folderPath);
-
-            var nbrFiles = Directory.GetFiles(folderPath).Length;
-
-            folderPath = folderPath + "\\" + domain + "_" + (nbrFiles + 1) + ".json";
-            Console.WriteLine("Saving .json to this path: " + folderPath);
-            File.WriteAllLines(folderPath, jsonArray);
-            return folderPath;
         }
 
         /// <summary>
         /// Method for cleaning the result before parsing the string into JSON.
+        /// Todo://This is not good. Find better way of cleaning.
         /// </summary>
         /// <param name="jsonStringTemp">String to clean</param>
         /// <returns>Clean string</returns>
-        private static string CleanJson(string jsonStringTemp)
+        public string CleanJson(string jsonStringTemp)
         {
             if (jsonStringTemp == string.Empty)
                 throw new ApplicationException("CleanJson, json input string is empty!");
 
-            StringBuilder jsonString = new StringBuilder();
+            var jsonString = new StringBuilder();
 
             jsonStringTemp = jsonStringTemp.Replace("var tumblr_api_read = ", string.Empty);
             jsonStringTemp = jsonStringTemp.Replace("\"", "'");
@@ -140,9 +112,11 @@ namespace TDown
                 .Replace("' tumblr", string.Empty)
                 .Replace("\\=", string.Empty)
                 .Replace("\\'", string.Empty)
+                .Replace("i's", string.Empty)
+                .Replace(">'L", string.Empty)
+                .Replace("u're", "u re")
                 .Replace("Je t'", "Je t")
                 .Replace("n't", "nt");
-                
 
             return jsonString.ToString();
         }

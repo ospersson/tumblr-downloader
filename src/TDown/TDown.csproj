@@ -20,7 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -46,18 +46,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DomainHandler.cs" />
     <Compile Include="DownloadHandler.cs" />
     <Compile Include="Infrastructure.cs" />
     <Compile Include="JsonHandler.cs" />
-    <Compile Include="Photo.cs" />
-    <Compile Include="Post.cs" />
+    <Compile Include="Entities\Photo.cs" />
+    <Compile Include="Entities\Post.cs" />
+    <Compile Include="JsonLogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TumblerSiteInfo.cs" />
+    <Compile Include="Entities\TumblerSiteInfo.cs" />
     <Compile Include="TumblrHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
