@@ -1,5 +1,5 @@
 # TDC a tumblr-downloader
-A command line Tumblr image downloader written in C#.
+A GUI and command line Tumblr image downloader written in C#.
 It uses the Tumblr API V1. V2 is used for downloading avatars.
 
 ## Usage
