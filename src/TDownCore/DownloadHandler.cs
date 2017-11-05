@@ -117,75 +117,7 @@ namespace TDownCore
                 await contentStream.CopyToAsync(stream);
                 return true;
             }
-
-            //var whcollection = new WebHeaderCollection();
-            //whcollection.Set("Love-You-Guys", "Downloading some nice pictures! Thanks!!");
-
-            //var request = (HttpWebRequest)WebRequest.Create(uri);
-            //request.UserAgent = "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.8.2; en-US) tdown/1.0.0 Sunflower/1.61803398";
-            //request.Headers = whcollection;
-
-            //HttpWebResponse response;
-
-            //try
-            //{
-            //    response = (HttpWebResponse)request.GetResponse();
-            //}
-            //catch (WebException we)
-            //{
-            //    Console.WriteLine(we.Message);
-            //    return false;
-            //}
-            //catch (Exception)
-            //{
-            //    throw;
-            //}
-
-            //return SaveWebResponesToDisk(response, "image", fileName);
         }
-
-        //public bool SaveWebResponesToDisk(HttpWebResponse response, string contentTypeStartsWith, string fileName)
-        //{
-        //    if (response == null)
-        //        throw new Exception("HttpWebResponse response is null");
-
-        //    if(string.IsNullOrEmpty(contentTypeStartsWith))
-        //        throw new Exception("contentTypeStartsWith is null or empty");
-
-        //    if (string.IsNullOrEmpty(fileName))
-        //    {
-        //        Console.WriteLine(" Method:SaveWebResponesToDisk: fileName is null or empty");
-        //        return false;
-        //    }
-
-        //    // Check that the remote file was found. The ContentType
-        //    // check is performed since a request for a non-existent
-        //    // image file might be redirected to a 404-page, which would
-        //    // yield the StatusCode "OK", even though the image was not
-        //    // found.
-        //    if ((response.StatusCode == HttpStatusCode.OK ||
-        //        response.StatusCode == HttpStatusCode.Moved ||
-        //        response.StatusCode == HttpStatusCode.Redirect) &&
-        //        response.ContentType.StartsWith(contentTypeStartsWith, StringComparison.OrdinalIgnoreCase))
-        //    {
-
-        //        // if the remote file was found, download it
-        //        using (Stream inputStream = response.GetResponseStream())
-        //        using (Stream outputStream = File.OpenWrite(fileName))
-        //        {
-        //            byte[] buffer = new byte[4096];
-        //            int bytesRead;
-        //            do
-        //            {
-        //                bytesRead = inputStream.Read(buffer, 0, buffer.Length);
-        //                outputStream.Write(buffer, 0, bytesRead);
-        //            } while (bytesRead != 0);
-        //        }
-        //        return true;
-        //    }
-        //    else
-        //        return false;
-        //}
 
         public void StatusMsg(string msg)
         {

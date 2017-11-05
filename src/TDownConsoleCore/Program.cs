@@ -31,7 +31,14 @@ namespace TDownConsole
             }
             if (args2.Length > 2)
             {
-                baseDiskPath = args2[2];
+                if (args2[2] == "-l")
+                {
+                    doWriteJson = true;
+                }
+                else
+                {
+                    baseDiskPath = args2[2];
+                }
             }
             if (args2.Length > 3)
             {
@@ -40,8 +47,11 @@ namespace TDownConsole
             }
 
 #if DEBUG
-            baseDomainUrl = "bestcatpictures.tumblr.com";
-            doWriteJson = true;
+            if(baseDomainUrl == string.Empty)
+            {
+                baseDomainUrl = "bestcatpictures.tumblr.com";
+                doWriteJson = true;
+            }
 #endif
 
             if (baseDomainUrl == string.Empty)
@@ -141,9 +151,9 @@ namespace TDownConsole
         private static async Task<string> DownloadJson(string baseDiskPath, string baseDomainUrl, bool doWriteJson, string url, IJsonHandler jsonhandler)
         {
             string jsonString = string.Empty;
-            using (var webClient = new HttpClient())
+            using (var httpClient = new HttpClient())
             {
-                jsonString = await jsonhandler.DownloadJson(webClient, url, doWriteJson, baseDiskPath, baseDomainUrl);
+                jsonString = await jsonhandler.DownloadJson(httpClient, url, doWriteJson, baseDiskPath, baseDomainUrl);
             }
 
             return jsonString;

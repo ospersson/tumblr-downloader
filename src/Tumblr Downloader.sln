@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDownConsole", "Tumblr Downloader\TDownConsole.csproj", "{C02309B6-6C08-4EEA-BE8B-B758CAA221AB}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -14,9 +14,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDownGUI", "TDownGUI\TDownG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDownTest", "..\Test\TDownTest\TDownTest.csproj", "{E03A136B-53FD-4EEA-A3BC-713BF5570126}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TDownCore", "TDownCore\TDownCore.xproj", "{792D0926-785E-4BED-974B-361AD0B742E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TDownCore", "TDownCore\TDownCore.csproj", "{792D0926-785E-4BED-974B-361AD0B742E6}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TDownConsoleCore", "TDownConsoleCore\TDownConsoleCore.xproj", "{4B5FE2AC-7ACF-41AA-B164-07DAA715B724}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TDownConsoleCore", "TDownConsoleCore\TDownConsoleCore.csproj", "{4B5FE2AC-7ACF-41AA-B164-07DAA715B724}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,5 +51,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF30BED0-5D82-4ED1-A71B-BB1DEA4F4F5F}
 	EndGlobalSection
 EndGlobal

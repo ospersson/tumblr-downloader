@@ -39,7 +39,7 @@ namespace TDownCore
         {
             if (url == string.Empty)
                 throw new Exception("url is empty!");
-                
+
             if (httpClient == null)
                 throw new Exception("webClient is null!");
 
@@ -53,7 +53,7 @@ namespace TDownCore
             {
                 var uri = new Uri(url);
                 jsonString = await httpClient.GetStringAsync(uri);
-                if(doLogJson)
+                if (doLogJson)
                 {
                     _jsonLogger.LogJson(jsonString);
                 }
@@ -62,8 +62,6 @@ namespace TDownCore
             catch (Exception we)
             {
                 Console.WriteLine(we.Message);
-                //Console.WriteLine("Press return to exit");
-                //Console.ReadLine();
             }
 
             //Return a clean json string.
@@ -115,9 +113,44 @@ namespace TDownCore
                 .Replace(">'L", string.Empty)
                 .Replace("u're", "u re")
                 .Replace("Je t'", "Je t")
-                .Replace("n't", "nt");
+                .Replace("n't", "nt")
+                .Replace("t's", "");
 
-            return jsonString.ToString();
+            var json = CleanValueFromSingleQuote("reblogged-from-title", jsonString.ToString());
+            json = CleanValueFromSingleQuote("reblogged-root-title", jsonString.ToString());
+
+            return json;
         }
+
+        private string CleanValueFromSingleQuote(string value, string json)
+        {
+            int n = 0;
+
+            while ((n = json.IndexOf(value, n, StringComparison.CurrentCultureIgnoreCase)) != -1)
+            {
+                n += value.Length;
+
+                string sub1 = json.Substring(n, 200).Trim();
+
+                int indexMarker = sub1.IndexOf("','reblog");
+
+                if (indexMarker == -1)
+                {
+                    //Try this pattern
+                    indexMarker = sub1.IndexOf("',\r\n\t\t'");
+                }
+
+                if (indexMarker != -1 && indexMarker > 4)
+                {
+                    string subtoclean = sub1.Substring(4, (indexMarker - 4));
+                    string cleanedSub = subtoclean.Replace("'", string.Empty);
+
+                    json = json.Replace(subtoclean, cleanedSub);
+                }
+            }
+
+            return json;
+        }
+
     }
 }

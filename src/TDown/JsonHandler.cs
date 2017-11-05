@@ -118,7 +118,40 @@ namespace TDown
                 .Replace("Je t'", "Je t")
                 .Replace("n't", "nt");
 
-            return jsonString.ToString();
+            var json = CleanValueFromSingleQuote("reblogged-from-title", jsonString.ToString());
+            json = CleanValueFromSingleQuote("reblogged-root-title", jsonString.ToString());
+
+            return json;
+        }
+
+        private string CleanValueFromSingleQuote(string value, string json)
+        {
+            int n = 0;
+
+            while ((n = json.IndexOf(value, n, StringComparison.InvariantCulture)) != -1)
+            {
+                n += value.Length;
+
+                string sub1 = json.Substring(n, 200).Trim();
+
+                int indexMarker = sub1.IndexOf("','reblog");
+
+                if(indexMarker == -1)
+                {
+                    //Try this pattern
+                    indexMarker = sub1.IndexOf("',\r\n\t\t'");
+                }
+
+                if (indexMarker != -1 && indexMarker > 4)
+                {
+                    string subtoclean = sub1.Substring(4, (indexMarker - 4));
+                    string cleanedSub = subtoclean.Replace("'", string.Empty);
+
+                    json = json.Replace(subtoclean, cleanedSub);
+                }
+            }
+
+            return json;
         }
     }
 }
