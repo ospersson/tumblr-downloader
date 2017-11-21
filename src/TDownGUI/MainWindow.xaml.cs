@@ -48,6 +48,7 @@ namespace TDownGUI
             else
             {
                 isDownloadStarted = true;
+                IsCancellationRequested = false;
                 btnDownload.Content = "Stop";
                 btnDownload.Background = Brushes.Red;
             }
@@ -66,6 +67,9 @@ namespace TDownGUI
             bool doWriteJson = false;
             string folderPath = string.Empty;
 
+#if DEBUG
+            doWriteJson = true;
+#endif
             if (baseDomainUrl == string.Empty)
             {
                 logger.LogText = "Please enter the blog where images(eg bestcatpictures.tumblr.com) will be downloaded from!";
@@ -78,7 +82,7 @@ namespace TDownGUI
 
             logger.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
 
-            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
+            IJsonLogger jsonLogger = new JsonLogger(baseDiskPath, baseDomainUrl);
             IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
             ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
             baseDomainUrl = DomainHandler.GetBaseDomainFromUrl(baseDomainUrl);

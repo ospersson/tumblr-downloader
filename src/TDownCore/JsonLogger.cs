@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace TDown
+
+namespace TDownCore
 {
     public interface IJsonLogger
     {
@@ -26,14 +23,14 @@ namespace TDown
         public void LogJson(string json)
         {
             if (_folderPath == string.Empty)
-                throw new ApplicationException("LogJsonToDisk, folder path is empty!");
+                throw new Exception("LogJsonToDisk, folder path is empty!");
             else if (_domain == string.Empty)
             {
-                throw new ApplicationException("LogJsonToDisk, domain is empty!");
+                throw new Exception("LogJsonToDisk, domain is empty!");
             }
             else if (json == string.Empty)
             {
-                throw new ApplicationException("LogJsonToDisk, jsonString is empty!");
+                throw new Exception("LogJsonToDisk, jsonString is empty!");
             }
 
             //Log raw json to disk
@@ -52,9 +49,9 @@ namespace TDown
 
             var nbrFiles = Directory.GetFiles(_folderPath).Length;
 
-            var filePath = _folderPath + "\\" + Guid.NewGuid().ToString() + "_" + _domain + "_" + (nbrFiles + 1) + ".json";
+            _folderPath = _folderPath + "\\" + _domain + "_" + (nbrFiles + 1) + ".json";
             Console.WriteLine("Saving .json to this path: " + _folderPath);
-            File.WriteAllLines(filePath, jsonArray);
+            File.WriteAllLines(_folderPath, jsonArray);
         }
     }
 

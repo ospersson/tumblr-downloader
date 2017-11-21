@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TDown
+namespace TDownCore
 {
     public interface ITumblrHandler
     {
@@ -54,7 +54,7 @@ namespace TDown
         {
             if (baseUrl == string.Empty)
             {
-                throw new ApplicationException("CreateDownloadUrl: baseUrl is empty!");
+                throw new Exception("CreateDownloadUrl: baseUrl is empty!");
             }
 
             //Create url 
@@ -73,13 +73,12 @@ namespace TDown
         public JObject GetTumblrObject(string baseDomainUrl, string jsonString, string folderPath)
         {
             if (jsonString == string.Empty)
-                throw new ApplicationException("GetTumblrObject: json string is empty");
+                throw new Exception("GetTumblrObject: json string is empty");
 
             JObject tumblrJObject;
             try
             {
-                dynamic results = JsonConvert.DeserializeObject<dynamic>(jsonString);
-                tumblrJObject = JObject.Parse(jsonString);     
+                tumblrJObject = JObject.Parse(jsonString);
             }
             catch (Exception ex)
             {

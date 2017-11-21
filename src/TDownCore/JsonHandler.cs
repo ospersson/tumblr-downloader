@@ -1,14 +1,16 @@
 ﻿using System;
 using System.IO;
-using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace TDown
+namespace TDownCore
 {
     public interface IJsonHandler
     {
         void WriteJsonToDebugFile(string baseUrl, string jsonString, string folderPath);
-        string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "");
+        Task<string> DownloadJson(HttpClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "");
     }
 
     public class JsonHandler : IJsonHandler
@@ -33,49 +35,37 @@ namespace TDown
             File.WriteAllText(pathAndName, jsonString);
         }
 
-        public string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "")
+        public async Task<string> DownloadJson(HttpClient httpClient, string url, bool doLogJson = false, string folderPath = "", string domain = "")
         {
             if (url == string.Empty)
-                throw new ApplicationException("url is empty!");
-                
-            if (webClient == null)
-                throw new ApplicationException("webClient is null!");
+                throw new Exception("url is empty!");
 
-            string jsonString;
+            if (httpClient == null)
+                throw new Exception("webClient is null!");
 
-            webClient.Proxy = null;
+            string jsonString = string.Empty;
+
+            httpClient.BaseAddress = new Uri(url);
+            httpClient.DefaultRequestHeaders.Accept.Clear();
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             try
             {
                 var uri = new Uri(url);
-                jsonString = webClient.DownloadString(uri);
-                if(doLogJson)
+                jsonString = await httpClient.GetStringAsync(uri);
+                if (doLogJson)
                 {
                     _jsonLogger.LogJson(jsonString);
                 }
 
             }
-            catch (WebException we)
+            catch (Exception we)
             {
                 Console.WriteLine(we.Message);
-                Console.WriteLine("Press return to exit");
-                Console.ReadLine();
-                return string.Empty;
-            }
-            catch(Exception)
-            {
-                throw;
             }
 
             //Return a clean json string.
-            var cleanJson = CleanJson(jsonString);
-
-            if (doLogJson)
-            {
-                _jsonLogger.LogJson(cleanJson);
-            }
-
-            return cleanJson;
+            return CleanJson(jsonString);
         }
 
         /// <summary>
@@ -87,7 +77,7 @@ namespace TDown
         public string CleanJson(string jsonStringTemp)
         {
             if (jsonStringTemp == string.Empty)
-                throw new ApplicationException("CleanJson, json input string is empty!");
+                throw new Exception("CleanJson, json input string is empty!");
 
             var jsonString = new StringBuilder();
 
@@ -139,7 +129,7 @@ namespace TDown
         {
             int n = 0;
 
-            while ((n = json.IndexOf(key, n, StringComparison.InvariantCulture)) != -1)
+            while ((n = json.IndexOf(key, n, StringComparison.CurrentCulture)) != -1)
             {
                 n += key.Length;
 
@@ -148,7 +138,7 @@ namespace TDown
                 {
                     maxlen = 2800;
                 }
-               
+
                 string sub1 = json.Substring(n, maxlen).Trim();
 
                 int indexMarker = sub1.IndexOf(marker);
@@ -166,7 +156,7 @@ namespace TDown
 
                     if (subtoclean.Length > 2500)
                     {
-                        if(subtoclean.Substring(subtoclean.Length - 6).Contains("'"))
+                        if (subtoclean.Substring(subtoclean.Length - 6).Contains("'"))
                         {
                             subtoclean = subtoclean.Replace("',", string.Empty);
                         }
@@ -178,5 +168,6 @@ namespace TDown
 
             return json;
         }
+
     }
 }
