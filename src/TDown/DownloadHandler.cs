@@ -48,7 +48,7 @@ namespace TDown
                 {
                     imagePath = folderPath + "\\" + post.ImageName(photo.PhotoUrl1280);
 
-                    if (File.Exists(photo.PhotoUrl1280))
+                    if (File.Exists(imagePath))
                     {
                         var consoleInfoExist = "Image " + imageNbr + " of 50: " + post.ImageName(photo.PhotoUrl1280) + " exists on disk   ";
                         //Random sleep, possible to read the text!
@@ -64,7 +64,7 @@ namespace TDown
                     //Save each image to disk.
                     DownloadRemoteImageFile(photo.PhotoUrl1280, imagePath);
 
-                    consoleInfo = "Downloading image " + imageNbr + " of 50: " + post.ImageName(photo.PhotoUrl1280);
+                    consoleInfo = "Downloading image " + imageNbr + ": " + post.ImageName(photo.PhotoUrl1280);
                     StatusMsg(string.Format("{0}", consoleInfo));
                     imageNbr++;
                     nbrPhotosInPost += 1;
@@ -77,9 +77,9 @@ namespace TDown
 
                 if (File.Exists(imagePath))
                 {
-                    var consoleInfoExist = "Image " + imageNbr + " of 50: " + post.ImageName(post.PhotoUrl1280) + " exists on disk   ";
+                    var consoleInfoExist = "Image " + imageNbr + ": " + post.ImageName(post.PhotoUrl1280) + " exists on disk   ";
                     //Random sleep, possible to read the text!
-                    Thread.Sleep(rnd.Next(maxWait / 5));
+                    Thread.Sleep(rnd.Next(maxWait / 8));
                     StatusMsg(string.Format("{0}", consoleInfoExist));
                     imageNbr++;
                     continue;

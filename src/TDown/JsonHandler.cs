@@ -68,7 +68,14 @@ namespace TDown
             }
 
             //Return a clean json string.
-            return CleanJson(jsonString);
+            var cleanJson = CleanJson(jsonString);
+
+            if (doLogJson)
+            {
+                _jsonLogger.LogJson(cleanJson);
+            }
+
+            return cleanJson;
         }
 
         /// <summary>
@@ -107,47 +114,65 @@ namespace TDown
             }
 
             jsonString.Replace("<p>", string.Empty)
+                .Replace("</p>", string.Empty)
                 .Replace("<a href=\\'", string.Empty)
                 .Replace("' class", string.Empty)
                 .Replace("' tumblr", string.Empty)
                 .Replace("\\=", string.Empty)
-                .Replace("\\'", string.Empty)
-                .Replace("i's", string.Empty)
-                .Replace(">'L", string.Empty)
-                .Replace("u're", "u re")
-                .Replace("Je t'", "Je t")
-                .Replace("n't", "nt");
+                .Replace("\\'", string.Empty);
 
-            var json = CleanValueFromSingleQuote("reblogged-from-title", jsonString.ToString());
-            json = CleanValueFromSingleQuote("reblogged-root-title", jsonString.ToString());
+            var json = CleanValueFromValue("reblogged-from-title", jsonString.ToString(), "','reblog");
+            json = CleanValueFromValue("reblogged-root-title", json, "','reblog");
+            json = CleanValueFromValue("photo-caption", json, "','width");
 
             return json;
         }
 
-        private string CleanValueFromSingleQuote(string value, string json)
+        /// <summary>
+        /// This function tries to clean out values from certain json key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="json"></param>
+        /// <param name="marker"></param>
+        /// <returns></returns>
+        private string CleanValueFromValue(string key, string json, string marker)
         {
             int n = 0;
 
-            while ((n = json.IndexOf(value, n, StringComparison.InvariantCulture)) != -1)
+            while ((n = json.IndexOf(key, n, StringComparison.InvariantCulture)) != -1)
             {
-                n += value.Length;
+                n += key.Length;
 
-                string sub1 = json.Substring(n, 200).Trim();
+                var maxlen = json.Length - n;
+                if ((json.Length - n) > 2800)
+                {
+                    maxlen = 2800;
+                }
+               
+                string sub1 = json.Substring(n, maxlen).Trim();
 
-                int indexMarker = sub1.IndexOf("','reblog");
+                int indexMarker = sub1.IndexOf(marker);
 
-                if(indexMarker == -1)
+                if (indexMarker == -1)
                 {
                     //Try this pattern
                     indexMarker = sub1.IndexOf("',\r\n\t\t'");
                 }
-
-                if (indexMarker != -1 && indexMarker > 4)
+                else if (indexMarker != -1 && indexMarker > 3)
                 {
-                    string subtoclean = sub1.Substring(4, (indexMarker - 4));
-                    string cleanedSub = subtoclean.Replace("'", string.Empty);
+                    string subtoclean = string.Empty;
+                    sub1 = sub1.Trim();
+                    subtoclean = sub1.Substring(3, indexMarker - 3);
 
-                    json = json.Replace(subtoclean, cleanedSub);
+                    if (subtoclean.Length > 2500)
+                    {
+                        if(subtoclean.Substring(subtoclean.Length - 6).Contains("'"))
+                        {
+                            subtoclean = subtoclean.Replace("',", string.Empty);
+                        }
+                    }
+
+                    json = json.Replace(subtoclean, string.Empty);
                 }
             }
 

@@ -78,7 +78,8 @@ namespace TDown
             JObject tumblrJObject;
             try
             {
-                tumblrJObject = JObject.Parse(jsonString);
+                dynamic results = JsonConvert.DeserializeObject<dynamic>(jsonString);
+                tumblrJObject = JObject.Parse(jsonString);     
             }
             catch (Exception ex)
             {

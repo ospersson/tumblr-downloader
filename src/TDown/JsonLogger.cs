@@ -52,9 +52,9 @@ namespace TDown
 
             var nbrFiles = Directory.GetFiles(_folderPath).Length;
 
-            _folderPath = _folderPath + "\\" + _domain + "_" + (nbrFiles + 1) + ".json";
+            var filePath = _folderPath + "\\" + Guid.NewGuid().ToString() + "_" + _domain + "_" + (nbrFiles + 1) + ".json";
             Console.WriteLine("Saving .json to this path: " + _folderPath);
-            File.WriteAllLines(_folderPath, jsonArray);
+            File.WriteAllLines(filePath, jsonArray);
         }
     }
 
