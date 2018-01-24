@@ -1,10 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -29,7 +27,7 @@ namespace TDownGUI
             this.DataContext = logg;
         }
 
-        private async void btnDownload_Click(object sender, RoutedEventArgs e)
+        private async void BtnDownload_Click(object sender, RoutedEventArgs e)
         {
             string baseDiskPath = string.Empty;
             string baseDomainUrl = string.Empty;
@@ -80,13 +78,7 @@ namespace TDownGUI
                 baseDiskPath = Infrastructure.AssemblyDirectory;
             }
 
-            logger.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
-
-            IJsonLogger jsonLogger = new JsonLogger(baseDiskPath, baseDomainUrl);
-            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
-            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
             baseDomainUrl = DomainHandler.GetBaseDomainFromUrl(baseDomainUrl);
-            var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
 
             if (doCreateSubFolder)
             {
@@ -100,9 +92,14 @@ namespace TDownGUI
             //Create download folder(if not exist).   
             Directory.CreateDirectory(folderPath);
 
-            IDownloadHandler downloadHandler = new DownloadHandler();
-            downloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
-            downloadHandler.DownloadStatusMessage += StatusMessage;
+            logger.LogText = string.Format("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
+
+            IJsonHandler jsonHandler = GetJsonHandler(baseDomainUrl, baseDiskPath);
+            ITumblrHandler tumblrHandler = GetTumblrHandler(baseDomainUrl, baseDiskPath);
+
+            var url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, 0, nbrOfPostPerCall);
+
+            DownloadAvatar(baseDomainUrl, folderPath);
 
             //Download json from url
             string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
@@ -123,15 +120,33 @@ namespace TDownGUI
 
             TumblerSiteInfo siteInfo = tumblrHandler.GetSiteInfo(tumblrJObject);
 
-            logger.LogText = string.Format("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
-
-            IList<Post> posts = tumblrHandler.GetPostList(tumblrJObject);
-            downloadHandler.DownloadAllImages(posts, folderPath);
-            logger.LogText = "First batch done.";
-
             MainDownloadLoop(logger, siteInfo.PostsTotal, baseDomainUrl, baseDiskPath, folderPath, nbrOfPostPerCall, doWriteJson);
 
             logger.LogText = "Download done!";
+        }
+
+        private void DownloadAvatar(string baseDomainUrl, string folderPath)
+        {
+            IDownloadHandler downloadHandler = new DownloadHandler();
+            downloadHandler.DownloadAvatar(baseDomainUrl, folderPath);
+            downloadHandler.DownloadStatusMessage += StatusMessage;
+        }
+
+        private IJsonHandler GetJsonHandler(string baseDomainUrl, string baseDiskPath)
+        {
+            IJsonLogger jsonLogger = new JsonLogger(baseDiskPath, baseDomainUrl);
+            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
+
+            return jsonHandler;
+        }
+
+        private static ITumblrHandler GetTumblrHandler(string baseDomainUrl, string baseDiskPath)
+        {
+            IJsonLogger jsonLogger = new JsonLogger(baseDiskPath, baseDomainUrl);
+            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
+            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
+
+            return tumblrHandler;
         }
 
         private string DownloadJson(string baseDomainUrl, string baseDiskPath, bool doWriteJson, string url, IJsonHandler jsonhandler)
@@ -150,9 +165,8 @@ namespace TDownGUI
             int nbrOfPostsFetchedFromUrl = 0;
             string url = string.Empty;
 
-            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
-            IJsonHandler jsonhandler = new JsonHandler(jsonLogger);
-            ITumblrHandler tumblrHandler = new TumblrHandler(jsonhandler);
+            IJsonHandler jsonHandler = GetJsonHandler(baseDomainUrl, baseDiskPath);
+            ITumblrHandler tumblrHandler = GetTumblrHandler(baseDomainUrl, baseDiskPath);
             JObject tumblrJObject;
 
             var downloadHandler = new DownloadHandler();
@@ -161,7 +175,7 @@ namespace TDownGUI
             nbrOfPostsFetchedFromUrl += nbrOfPostPerCall;
 
             //Main download loop.
-            for (int currentPost = 50; currentPost < postsTotal; currentPost += 50)
+            for (int currentPost = 0; currentPost < postsTotal; currentPost += 50)
             {
                 //Check if thread is cancelled.
                 if (IsCancellationRequested) return;
@@ -170,7 +184,13 @@ namespace TDownGUI
                 url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, currentPost, nbrOfPostPerCall);
 
                 //Download json from url
-                string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonhandler);
+                string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
+
+                if(string.IsNullOrEmpty(jsonString))
+                {
+                    //Parsing of json got some errors. Continue with next 50 pictures.
+                    continue;
+                }
 
                 logger.LogText = string.Format("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
                 tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
@@ -206,38 +226,6 @@ namespace TDownGUI
         private void btnBrowseDownloadFolder_Click(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Process.Start("explorer.exe", @"c:\test");
-        }
-    }
-
-
-    public interface ILogger
-    {
-        string LogText { get; set; }
-        event PropertyChangedEventHandler PropertyChanged;
-    }
-
-    public class Logger : ILogger, INotifyPropertyChanged
-    {
-        private static StringBuilder _logText = new StringBuilder();
-
-        public string LogText
-        {
-            get
-            {
-                return _logText.ToString();
-            }
-            set
-            {
-                _logText.AppendFormat(value + Environment.NewLine);
-                OnPropertyChanged("LogText");
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

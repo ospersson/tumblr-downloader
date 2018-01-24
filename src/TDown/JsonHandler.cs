@@ -62,9 +62,12 @@ namespace TDown
                 Console.ReadLine();
                 return string.Empty;
             }
-            catch(Exception)
+            catch(Exception ex)
             {
-                throw;
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Press return to exit");
+                Console.ReadLine();
+                return string.Empty;
             }
 
             //Return a clean json string.
