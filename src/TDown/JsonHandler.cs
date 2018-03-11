@@ -8,7 +8,7 @@ namespace TDown
     public interface IJsonHandler
     {
         void WriteJsonToDebugFile(string baseUrl, string jsonString, string folderPath);
-        string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "");
+        string DownloadJson(string url, bool doLogJson, string folderPath = "", string domain = "");
     }
 
     public class JsonHandler : IJsonHandler
@@ -33,7 +33,18 @@ namespace TDown
             File.WriteAllText(pathAndName, jsonString);
         }
 
-        public string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "")
+        public string DownloadJson(string url, bool doLogJson, string folderPath, string domain)
+        {
+            string jsonString = string.Empty;
+            using (var webClient = new WebClient())
+            {
+                jsonString = DownloadJson(webClient, url, doLogJson, folderPath, domain);
+            }
+
+            return jsonString;
+        }
+
+        private string DownloadJson(WebClient webClient, string url, bool doLogJson = false, string folderPath = "", string domain = "")
         {
             if (url == string.Empty)
                 throw new ApplicationException("url is empty!");
@@ -87,7 +98,7 @@ namespace TDown
         /// </summary>
         /// <param name="jsonStringTemp">String to clean</param>
         /// <returns>Clean string</returns>
-        public string CleanJson(string jsonStringTemp)
+        private string CleanJson(string jsonStringTemp)
         {
             if (jsonStringTemp == string.Empty)
                 throw new ApplicationException("CleanJson, json input string is empty!");

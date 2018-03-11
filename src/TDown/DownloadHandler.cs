@@ -9,7 +9,7 @@ namespace TDown
     public interface IDownloadHandler
     {
         void DownloadAvatar(string siteName, string folderPath);
-        void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 5000);
+        void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 5000, bool downloadRaw = false);
         event StatusMessageEventHandler DownloadStatusMessage;
     }
 
@@ -31,7 +31,7 @@ namespace TDown
             DownloadRemoteImageFile(avatarUrl, avatarDiskPath);
         }
 
-        public void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 10000)
+        public void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 10000, bool downloadRaw = false)
         {
             var imageNbr = 1;
             var rnd = new Random();
@@ -40,61 +40,112 @@ namespace TDown
             {
                 string consoleInfo = string.Empty;
                 string imagePath = string.Empty;
+                string imageName = string.Empty;
 
                 var nbrPhotosInPost = 0;
 
                 //Check if it is a multiple image post.
-                foreach(var photo in post.Photos)
+                foreach (var photo in post.Photos)
                 {
-                    imagePath = folderPath + "\\" + post.ImageName(photo.PhotoUrl1280);
+                    imageName = ImageName(post, downloadRaw);
+                    imagePath = folderPath + "\\" + imageName;
 
-                    if (File.Exists(imagePath))
+                    if (CheckIfFileExistInStorage(imagePath, imageName, imageNbr, maxWait))
                     {
-                        var consoleInfoExist = "Image " + imageNbr + " of 50: " + post.ImageName(photo.PhotoUrl1280) + " exists on disk   ";
-                        //Random sleep, possible to read the text!
-                        Thread.Sleep(rnd.Next(maxWait / 5));
-                        StatusMsg(string.Format("{0}", consoleInfoExist));
-                        imageNbr++;
+                        //Image exist in file storage, continue.
                         continue;
                     }
 
                     //Random sleep, be nice to the host!
                     Thread.Sleep(rnd.Next(maxWait));
 
-                    //Save each image to disk.
-                    DownloadRemoteImageFile(photo.PhotoUrl1280, imagePath);
+                    bool HasDownloadedRawPhoto = false;
 
-                    consoleInfo = "Downloading image " + imageNbr + ": " + post.ImageName(photo.PhotoUrl1280);
+                    //Save each image to disk.
+                    if (downloadRaw)
+                    {
+                        //Try to download raw image.
+                        HasDownloadedRawPhoto = DownloadRemoteImageFile(photo.PhotoUrlRaw, imagePath);
+                    }
+
+                    if (HasDownloadedRawPhoto == false)
+                    {
+                        //Raw download was not performed or it was a failure use 1280px fallback.
+                        DownloadRemoteImageFile(photo.PhotoUrl1280, imagePath);
+                    }
+
+                    consoleInfo = "Downloading image " + imageNbr + " of 50: " + imageName;
+
                     StatusMsg(string.Format("{0}", consoleInfo));
                     imageNbr++;
                     nbrPhotosInPost += 1;
-                }
-
+                }   
+                    
                 if (nbrPhotosInPost > 0)
                     continue;
 
-                imagePath = folderPath + "\\" + post.ImageName(post.PhotoUrl1280);
+                imageName = ImageName(post, downloadRaw);
+                imagePath = folderPath + "\\" + imageName;
 
-                if (File.Exists(imagePath))
+                if (CheckIfFileExistInStorage(imagePath, imageName, imageNbr, maxWait))
                 {
-                    var consoleInfoExist = "Image " + imageNbr + ": " + post.ImageName(post.PhotoUrl1280) + " exists on disk   ";
-                    //Random sleep, possible to read the text!
-                    Thread.Sleep(rnd.Next(maxWait / 8));
-                    StatusMsg(string.Format("{0}", consoleInfoExist));
-                    imageNbr++;
+                    //Image exist in file storage, continue.
                     continue;
                 }
 
                 //Random sleep, be nice to the host!
                 Thread.Sleep(rnd.Next(maxWait));
 
-                //Save each image to disk.
-                DownloadRemoteImageFile(post.PhotoUrl1280, imagePath);
+                bool HasDownloadedRaw = false;
 
-                consoleInfo = "Downloading image " + imageNbr + " of 50: " + post.ImageName(post.PhotoUrl1280);
+                //Save each image to disk.
+                if (downloadRaw)
+                {
+                    //Try to download raw image.
+                    HasDownloadedRaw = DownloadRemoteImageFile(post.PhotoUrlRaw, imagePath);
+                }
+
+                if (HasDownloadedRaw == false)
+                {
+                    //Raw download was not performed or it was a failure use 1280px fallback.
+                    DownloadRemoteImageFile(post.PhotoUrl1280, imagePath);
+                }
+
+                consoleInfo = "Downloading image " + imageNbr + " of 50: " + imageName;
                 StatusMsg(string.Format("{0}", consoleInfo));
                 imageNbr++;
             }
+        }
+
+        private bool CheckIfFileExistInStorage(string imagePath, string imageName, int imageNumber, int maxWait)
+        {
+            if (!File.Exists(imagePath))
+                return false;
+            
+            var rnd = new Random();
+            var consoleInfoExist = "Image " + imageNumber + " of 50: " + imageName + " exists on disk   ";
+            //Random sleep, possible to read the text!
+            Thread.Sleep(rnd.Next(maxWait / 5));
+            StatusMsg(string.Format("{0}", consoleInfoExist));
+            imageNumber++;            
+
+            return true;
+        }
+
+        private string ImageName(Post post, bool doDownloadRaw)
+        {
+            string imageName = string.Empty;
+
+            if(doDownloadRaw)
+            {
+                imageName = post.ImageName(post.PhotoUrlRaw);
+            }
+            else
+            {
+                imageName = post.ImageName(post.PhotoUrl1280);
+            }
+
+            return imageName;
         }
 
         /// <summary>
@@ -106,7 +157,7 @@ namespace TDown
         /// <param name="uri"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public bool DownloadRemoteImageFile(string uri, string fileName)
+        private bool DownloadRemoteImageFile(string uri, string fileName)
         {
             var whcollection = new WebHeaderCollection();
             whcollection.Set("Love-You-Guys", "Downloading some nice pictures! Thanks!!");
@@ -126,15 +177,16 @@ namespace TDown
                 Console.WriteLine(we.Message);
                 return false;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Console.WriteLine(ex.ToString());
+                return false;
             }
 
             return SaveWebResponesToDisk(response, "image", fileName);
         }
 
-        public bool SaveWebResponesToDisk(HttpWebResponse response, string contentTypeStartsWith, string fileName)
+        private bool SaveWebResponesToDisk(HttpWebResponse response, string contentTypeStartsWith, string fileName)
         {
             if (response == null)
                 throw new Exception("HttpWebResponse response is null");
@@ -179,8 +231,11 @@ namespace TDown
 
         public void StatusMsg(string msg)
         {
-            StatusMessageEventArgs args = new StatusMessageEventArgs();
-            args.Message = msg;
+            StatusMessageEventArgs args = new StatusMessageEventArgs
+            {
+                Message = msg
+            };
+
             OnStatusMessage(args);
         }
 

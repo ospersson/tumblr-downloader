@@ -38,6 +38,8 @@ namespace TDown
         public string PhotoUrl500 { get; set; }
         [JsonProperty("photo-url-100")]
         public string PhotoUrl100 { get; set; }
+        //Url for raw image resolution. Not all images have those. 
+        public string PhotoUrlRaw { get; set; }
 
         [JsonProperty("photos")]
         public List<Photo> Photos { get; set; }
@@ -49,6 +51,19 @@ namespace TDown
         {
             int idx = photoUrl.LastIndexOf('/');
             return photoUrl.Substring(idx + 1); 
+        }
+
+        internal void CreateRawImagePath()
+        {
+            const string rawBaseUrl = "https://s3.amazonaws.com/data.tumblr.com/";
+            string newUrl = PhotoUrl1280
+                .Replace("1280.jpg", "raw.jpg")
+                .Replace("500.jpg", "raw.jpg");
+
+            var firstSlash = newUrl.IndexOf(".com/");
+            var lastPath = newUrl.Remove(0, firstSlash + 5);
+
+            PhotoUrlRaw = rawBaseUrl + lastPath;
         }
     }
 }

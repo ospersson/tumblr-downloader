@@ -76,7 +76,7 @@ namespace TDownConsole
             downloadHandler.DownloadStatusMessage += StatusMessage;
 
             //Download json from url
-            string jsonString = DownloadJson(baseDiskPath, baseDomainUrl, doWriteJson, url, jsonHandler);
+            var jsonString = jsonHandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
             //JObject tumblrJObject;
             TumblerSiteInfo siteInfo;
@@ -119,7 +119,7 @@ namespace TDownConsole
                 url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, currentPost, nbrOfPostPerCall);
 
                 //Download json from url
-                jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
+                jsonString = jsonHandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
                 Console.WriteLine("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
                 var tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
@@ -132,16 +132,7 @@ namespace TDownConsole
             }
         }
 
-        private static string DownloadJson(string baseDiskPath, string baseDomainUrl, bool doWriteJson, string url, IJsonHandler jsonhandler)
-        {
-            string jsonString = string.Empty;
-            using (var webClient = new WebClient())
-            {
-                jsonString = jsonhandler.DownloadJson(webClient, url, doWriteJson, baseDiskPath, baseDomainUrl);
-            }
-
-            return jsonString;
-        }
+        
 
         private static void ExitApp()
         {
