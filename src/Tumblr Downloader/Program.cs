@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using TDown;
 
 namespace TDownConsole
@@ -15,28 +15,19 @@ namespace TDownConsole
             int nbrOfPostsFetchedFromUrl = 0;
             int nbrOfPostPerCall = 50;
             bool doWriteJson = false;
+            bool downloadRaw = false;
 
             //Read from console
-            string[] args2 = Environment.GetCommandLineArgs();
-
-            if (args2.Length > 1)
-            {
-                baseDomainUrl = args2[1];
-            }
-            if (args2.Length > 2)
-            {
-                baseDiskPath = args2[2];
-            }
-            if (args2.Length > 3)
-            {
-                if (args2[3] == "-l")
-                    doWriteJson = true;
-            }
-
 #if DEBUG
-            baseDomainUrl = "bestcatpictures.tumblr.com";
+            char[] delimiterChars = { ' ' };
+            var commandLine = Console.ReadLine();
+            string[] args2 = commandLine.Split(delimiterChars);
             doWriteJson = true;
+#else
+            string[] args2 = Environment.GetCommandLineArgs();
 #endif
+            var consoleParser = new ConsoleParser();
+            consoleParser.Parse(args2, out baseDomainUrl, out baseDiskPath, out downloadRaw, out doWriteJson);
 
             if (baseDomainUrl == string.Empty)
             {
@@ -50,12 +41,8 @@ namespace TDownConsole
                 baseDiskPath = Infrastructure.AssemblyDirectory;
             }
 
-            //Handles the Ctrl-C event.
-            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
-            {
-                e.Cancel = true;
-                ExitApp();
-            };
+            Console.WriteLine("domain: " + baseDomainUrl + " diskpath: " + baseDiskPath + " downloadraw: " + downloadRaw);
+            InitEvents();
 
             Console.WriteLine("Starting download from {0} to: {1} ", baseDomainUrl, baseDiskPath);
 
@@ -99,19 +86,34 @@ namespace TDownConsole
             }
 
             Console.WriteLine("Downloading the latest 50 images of {0}", siteInfo.PostsTotal);
-            downloadHandler.DownloadAllImages(posts, folderPath);
+            downloadHandler.DownloadAllImages(posts, folderPath, 5000, downloadRaw);
             Console.WriteLine("\nFirst batch done.");
 
             nbrOfPostsFetchedFromUrl += 50;
-            MainDownloadLoop(baseDiskPath, baseDomainUrl, nbrOfPostPerCall, doWriteJson, folderPath, jsonHandler, tumblrHandler, ref url, downloadHandler, ref jsonString, siteInfo, ref posts);
+            MainDownloadLoop(baseDiskPath, baseDomainUrl, nbrOfPostPerCall, doWriteJson, folderPath, ref url, ref jsonString, siteInfo, ref posts, downloadRaw);
 
             Console.WriteLine("\nDownload done!");
             Console.WriteLine("\nPress return to exit.");
             Console.ReadLine();
         }
 
-        private static void MainDownloadLoop(string baseDiskPath, string baseDomainUrl, int nbrOfPostPerCall, bool doWriteJson, string folderPath, IJsonHandler jsonHandler, ITumblrHandler tumblrHandler, ref string url, IDownloadHandler downloadHandler, ref string jsonString, TumblerSiteInfo siteInfo, ref IList<Post> posts)
+        private static void MainDownloadLoop(
+            string baseDiskPath, 
+            string baseDomainUrl, 
+            int nbrOfPostPerCall, 
+            bool doWriteJson, 
+            string folderPath,   
+            ref string url, 
+            ref string jsonString, 
+            TumblerSiteInfo siteInfo, 
+            ref IList<Post> posts,
+            bool downloadRaw)
         {
+            IJsonLogger jsonLogger = new JsonLogger(folderPath, baseDomainUrl);
+            IJsonHandler jsonHandler = new JsonHandler(jsonLogger);
+            ITumblrHandler tumblrHandler = new TumblrHandler(jsonHandler);
+            IDownloadHandler downloadHandler = new DownloadHandler();
+
             //Main download loop.
             for (int currentPost = 50; currentPost < siteInfo.PostsTotal; currentPost += 50)
             {
@@ -122,17 +124,40 @@ namespace TDownConsole
                 jsonString = jsonHandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
                 Console.WriteLine("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
-                var tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
+
+                JObject tumblrJObject;
+
+                try
+                {
+                    tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString.ToString(), folderPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("\n --- Writing stack trace: ---");
+                    Console.WriteLine("\n" + ex.ToString());
+                    continue;
+                }
 
                 //Get a list of tumblr images post(s)
                 posts = tumblrHandler.GetPostList(tumblrJObject);
 
+                //Get all status messages events from downloadhandler
+                downloadHandler.DownloadStatusMessage += StatusMessage;
+
                 //Download images from the tumblr image post(s)
-                downloadHandler.DownloadAllImages(posts, folderPath);
+                downloadHandler.DownloadAllImages(posts, folderPath, 5000, downloadRaw);      
             }
         }
 
-        
+        private static void InitEvents()
+        {
+            //Handles the Ctrl-C event.
+            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
+            {
+                e.Cancel = true;
+                ExitApp();
+            };
+        }
 
         private static void ExitApp()
         {

@@ -31,7 +31,7 @@ namespace TDown
             DownloadRemoteImageFile(avatarUrl, avatarDiskPath);
         }
 
-        public void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 10000, bool downloadRaw = false)
+        public void DownloadAllImages(IList<Post> posts, string folderPath, int maxWait = 5000, bool downloadRaw = false)
         {
             var imageNbr = 1;
             var rnd = new Random();
@@ -47,7 +47,9 @@ namespace TDown
                 //Check if it is a multiple image post.
                 foreach (var photo in post.Photos)
                 {
-                    imageName = ImageName(post, downloadRaw);
+                    nbrPhotosInPost += 1;
+
+                    imageName = ImageName(photo, downloadRaw);
                     imagePath = folderPath + "\\" + imageName;
 
                     if (CheckIfFileExistInStorage(imagePath, imageName, imageNbr, maxWait))
@@ -74,22 +76,24 @@ namespace TDown
                         DownloadRemoteImageFile(photo.PhotoUrl1280, imagePath);
                     }
 
-                    consoleInfo = "Downloading image " + imageNbr + " of 50: " + imageName;
+                    consoleInfo = "Downloading image " + nbrPhotosInPost + " in post " + imageNbr  + " of 50: " + imageName;
 
                     StatusMsg(string.Format("{0}", consoleInfo));
-                    imageNbr++;
-                    nbrPhotosInPost += 1;
                 }   
                     
                 if (nbrPhotosInPost > 0)
+                {
+                    imageNbr++;
                     continue;
-
+                }
+                    
                 imageName = ImageName(post, downloadRaw);
                 imagePath = folderPath + "\\" + imageName;
 
                 if (CheckIfFileExistInStorage(imagePath, imageName, imageNbr, maxWait))
                 {
                     //Image exist in file storage, continue.
+                    imageNbr++;
                     continue;
                 }
 
@@ -148,6 +152,21 @@ namespace TDown
             return imageName;
         }
 
+        private string ImageName(Photo photo, bool doDownloadRaw)
+        {
+            string imageName = string.Empty;
+
+            if (doDownloadRaw)
+            {
+                imageName = photo.ImageName(photo.PhotoUrlRaw);
+            }
+            else
+            {
+                imageName = photo.ImageName(photo.PhotoUrl1280);
+            }
+
+            return imageName;
+        }
         /// <summary>
         /// Download an image from url. 
         /// 
@@ -159,6 +178,12 @@ namespace TDown
         /// <returns></returns>
         private bool DownloadRemoteImageFile(string uri, string fileName)
         {
+            if (string.IsNullOrEmpty(uri))
+                throw new Exception("uri is null or empty");
+
+            if (string.IsNullOrEmpty(fileName))
+                throw new Exception("fileName is null or empty");
+
             var whcollection = new WebHeaderCollection();
             whcollection.Set("Love-You-Guys", "Downloading some nice pictures! Thanks!!");
 
@@ -174,7 +199,9 @@ namespace TDown
             }
             catch (WebException we)
             {
-                Console.WriteLine(we.Message);
+#if DEBUG
+                StatusMsg(string.Format("{0}", we.Message + " : " + uri));
+#endif
                 return false;
             }
             catch (Exception ex)

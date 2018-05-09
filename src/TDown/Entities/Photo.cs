@@ -52,5 +52,11 @@ namespace TDown
 
             return rawBaseUrl + lastPath;
         }
+
+        public string ImageName(string photoUrl)
+        {
+            int idx = photoUrl.LastIndexOf('/');
+            return photoUrl.Substring(idx + 1);
+        }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -200,7 +198,7 @@ namespace TDownGUI
                 var posts = tumblrHandler.GetPostList(tumblrJObject);
 
                 //Download images from the tumblr image post(s)
-                downloadHandler.DownloadAllImages(posts, folderPath, 1000, true);
+                downloadHandler.DownloadAllImages(posts, folderPath, 1000, doDownloadRaw);
 
                 nbrOfPostsFetchedFromUrl += nbrOfPostPerCall;
             }
