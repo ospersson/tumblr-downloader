@@ -25,5 +25,11 @@ namespace TDownCore
         public string PhotoUrl500 { get; set; }
         [JsonProperty("photo-url-400")]
         public string PhotoUrl400 { get; set; }
+
+        public string ImageName(string photoUrl)
+        {
+            int idx = photoUrl.LastIndexOf('/');
+            return photoUrl.Substring(idx + 1);
+        }
     }
 }

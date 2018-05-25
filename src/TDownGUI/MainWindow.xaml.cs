@@ -1,8 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -52,14 +50,15 @@ namespace TDownGUI
             }
 
             bool doCreateSubFolder = chkSubfolder.IsChecked ?? false;
+            bool doDownloadRaw = chkDownloadRaw.IsChecked ?? false;
 
             await Task.Factory.StartNew(() =>
             {
-                TumblrWorker(logg, baseDomainUrl, baseDiskPath, doCreateSubFolder);
+                TumblrWorker(logg, baseDomainUrl, baseDiskPath, doCreateSubFolder, doDownloadRaw);
             });
         }
 
-        public void TumblrWorker(ILogger logger, string baseDomainUrl, string baseDiskPath, bool doCreateSubFolder)
+        public void TumblrWorker(ILogger logger, string baseDomainUrl, string baseDiskPath, bool doCreateSubFolder, bool doDownloadRaw)
         {
             int nbrOfPostPerCall = 50;
             bool doWriteJson = false;
@@ -101,8 +100,7 @@ namespace TDownGUI
 
             DownloadAvatar(baseDomainUrl, folderPath);
 
-            //Download json from url
-            string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
+            var jsonString = jsonHandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
             JObject tumblrJObject;
 
@@ -120,7 +118,7 @@ namespace TDownGUI
 
             TumblerSiteInfo siteInfo = tumblrHandler.GetSiteInfo(tumblrJObject);
 
-            MainDownloadLoop(logger, siteInfo.PostsTotal, baseDomainUrl, baseDiskPath, folderPath, nbrOfPostPerCall, doWriteJson);
+            MainDownloadLoop(logger, siteInfo.PostsTotal, baseDomainUrl, baseDiskPath, folderPath, nbrOfPostPerCall, doWriteJson, doDownloadRaw);
 
             logger.LogText = "Download done!";
         }
@@ -149,18 +147,7 @@ namespace TDownGUI
             return tumblrHandler;
         }
 
-        private string DownloadJson(string baseDomainUrl, string baseDiskPath, bool doWriteJson, string url, IJsonHandler jsonhandler)
-        {
-            string jsonString = string.Empty;
-            using (var webClient = new WebClient())
-            {
-                jsonString = jsonhandler.DownloadJson(webClient, url, doWriteJson, baseDiskPath, baseDomainUrl);
-            }
-
-            return jsonString;
-        }
-
-        private void MainDownloadLoop(ILogger logger, int postsTotal, string baseDomainUrl, string baseDiskPath, string folderPath, int nbrOfPostPerCall, bool doWriteJson = false)
+        private void MainDownloadLoop(ILogger logger, int postsTotal, string baseDomainUrl, string baseDiskPath, string folderPath, int nbrOfPostPerCall, bool doWriteJson = false, bool doDownloadRaw = false)
         {
             int nbrOfPostsFetchedFromUrl = 0;
             string url = string.Empty;
@@ -184,22 +171,34 @@ namespace TDownGUI
                 url = tumblrHandler.CreateDownloadUrl(baseDomainUrl, currentPost, nbrOfPostPerCall);
 
                 //Download json from url
-                string jsonString = DownloadJson(baseDomainUrl, baseDiskPath, doWriteJson, url, jsonHandler);
+                var jsonString = jsonHandler.DownloadJson(url, doWriteJson, baseDiskPath, baseDomainUrl);
 
-                if(string.IsNullOrEmpty(jsonString))
+                if (string.IsNullOrEmpty(jsonString))
                 {
                     //Parsing of json got some errors. Continue with next 50 pictures.
                     continue;
                 }
 
                 logger.LogText = string.Format("\nParsing JSON for batch {0} to {1}: ", currentPost, (currentPost + 50));
-                tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
 
+                try
+                {
+                    tumblrJObject = tumblrHandler.GetTumblrObject(baseDomainUrl, jsonString, folderPath);
+                }
+                catch (Exception ex)
+                {
+                    //Error in json parsing, continue with next batch
+                    logger.LogText = "--- Writing stack trace: ---";
+                    logger.LogText = ex.ToString();
+                    nbrOfPostsFetchedFromUrl += nbrOfPostPerCall;
+                    continue;
+                }
+                
                 //Get a list of tumblr images post(s)
                 var posts = tumblrHandler.GetPostList(tumblrJObject);
 
                 //Download images from the tumblr image post(s)
-                downloadHandler.DownloadAllImages(posts, folderPath);
+                downloadHandler.DownloadAllImages(posts, folderPath, 1000, doDownloadRaw);
 
                 nbrOfPostsFetchedFromUrl += nbrOfPostPerCall;
             }
@@ -212,9 +211,10 @@ namespace TDownGUI
 
         private void btnBrowseFolder_Click(object sender, RoutedEventArgs e)
         {
-            var folderBrowserDialog = new FolderBrowserDialog();
-
-            folderBrowserDialog.SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            var folderBrowserDialog = new FolderBrowserDialog
+            {
+                SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+            };
 
             DialogResult result = folderBrowserDialog.ShowDialog();
             if (result == System.Windows.Forms.DialogResult.OK)

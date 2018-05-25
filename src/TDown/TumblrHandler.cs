@@ -44,6 +44,7 @@ namespace TDown
             foreach (JToken result in results)
             {
                 Post post = JsonConvert.DeserializeObject<Post>(result.ToString());
+                post.CreateRawImagePath();
                 posts.Add(post);
             }
 
